@@ -1,0 +1,3 @@
+
+rm reference_et.so
+f2py -c --fcompiler=gnu95 -m reference_et penman.for  ./libttutil/libttutil.a ./libw60/libw60.a
