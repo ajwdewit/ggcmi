@@ -80,8 +80,9 @@ def task_runner(sa_engine, task):
 
             if msg is None:
                 msg = "Starting simulation for %s-%s (%5.2f, %5.2f), planting " \
-                      "at: %s "
-                msg = msg % (cropname, watersupply, lon, lat, timerdata['CROP_START_DATE'])
+                      "at: %s, final harvest at: %s"
+                msg = msg % (cropname, watersupply, lon, lat, timerdata['CROP_START_DATE'],
+                             timerdata['CROP_END_DATE'])
                 logger.info(msg)
 
             wofost = wofostEngine(sitedata, timerdata, soildata, cropdata, wdp,
@@ -102,12 +103,23 @@ def task_runner(sa_engine, task):
             task_id = task["task_id"]
             obj = {"task_id":task_id, "crop_no":crop_no, "longitude":lon, "latitude":lat}
             obj["allresults"] = allresults
+
+            # Write results to pickle file. First to .tmp then rename to .pkl
+            # to avoid read/write collisions with ggcmi_processsor
             pickle_fname = run_settings.output_file_template % task_id
+            if os.path.splitext(pickle_fname)[1] == ".pkl":
+                pickle_fname += ".tmp"
+            else:
+                pickle_fname += ".pkl.tmp"
+
             pickle_fname_fp = os.path.join(run_settings.output_folder,
                                            pickle_fname)
             with open(pickle_fname_fp, 'wb') as f:
                 cPickle.dump(obj, f, cPickle.HIGHEST_PROTOCOL)
-            msg = "Simulating for lat-lon (%s, %s) took %6.1f seconds" 
+            final_fname_fp = os.path.splitext(pickle_fname_fp)[0]
+            os.rename(pickle_fname_fp, final_fname_fp)
+
+            msg = "Simulating for lat-lon (%s, %s) took %6.1f seconds"
             logger.info( msg % (str(lat), str(lon), time.time()-t3))
         else:
             msg = "Failed simulating for lon,lat,crop, watersupply (%s, %s, " \

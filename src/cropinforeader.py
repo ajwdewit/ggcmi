@@ -128,18 +128,20 @@ class CropInfoProvider():
                     days=start_doy-1)
                 crop_end_date = date(year,1,1) + timedelta(days=end_doy-1)
 
+
+            result['CAMPAIGNYEAR'] = year
             # system start date will be before the crop starts. the number of
             # days depends on the setting "days_before_CROP_START_DATE"
             result['START_DATE'] = crop_start_date - \
                 timedelta(days=run_settings.days_before_CROP_START_DATE)
-            # we add 100 days to END_DATE to allow variability in
-            # maturity date.
-            result['END_DATE'] = crop_end_date + timedelta(days=100)
             result['CROP_START_DATE'] = crop_start_date
-            result['CROP_END_DATE'] = crop_end_date
-            result['CAMPAIGNYEAR'] = year
             result['CROP_START_TYPE'] = 'sowing'
+            # we add days to CROP_END_DATE to allow variability in
+            # maturity date.
+            crop_end_date += timedelta(days=run_settings.days_after_CROP_END_DATE)
+            result['CROP_END_DATE'] = crop_end_date
             result['CROP_END_TYPE'] = 'earliest'
+            result['END_DATE'] = crop_end_date + timedelta(days=10)
             result['MAX_DURATION'] = 365
             return result
         except Exception as e:

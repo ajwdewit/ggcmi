@@ -103,7 +103,7 @@ landmask_grid = os.path.join(data_dir, "geodata", "glob_landmask_resampled.flt")
 # dummy code to avoid import of GridEnvelope2D from pcse.geo.gridenvelope2d 
 class GridEnvelope2D:
     def __init__(self, ncols, nrows, xll, yll, dx, dy):
-        pass; 
+        pass
 
 # regions and crop specific files with parameters
 regions = {"World": GridEnvelope2D(720, 360, -180., -90., 0.5, 0.5),
@@ -143,6 +143,8 @@ soil_data = cPickle.load(open(soil_data_file, "rb"))
 
 # number of days to start simulation before the crop starts
 days_before_CROP_START_DATE = 90
+# Number of days to add to harvest date to allow variability in maturity
+days_after_CROP_END_DATE = 14
 
 # Location where output should be written
 top_level_dir = "/mnt/ggcmi_output"

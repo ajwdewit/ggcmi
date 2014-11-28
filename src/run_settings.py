@@ -89,7 +89,7 @@ dbname   = "ggcmi"
 connstr = 'mysql://%s:%s@%s/%s?charset=utf8' % (username, password, hostname, dbname)
 
 # Folder for pcse code
-pcse_dir = r"/home/hoek008/projects/ggcmi/pcse"
+pcse_dir = r"/home/hoek008/projects/ggcmi/ggcmi/pcse"
 
 # Top level folder for data
 data_dir = "/home/hoek008/projects/ggcmi/data/"
@@ -143,6 +143,8 @@ soil_data = cPickle.load(open(soil_data_file, "rb"))
 
 # number of days to start simulation before the crop starts
 days_before_CROP_START_DATE = 90
+# Number of days to add to harvest date to allow variability in maturity
+days_after_CROP_END_DATE = 14
 
 # Location where output should be written
 top_level_dir = data_dir
