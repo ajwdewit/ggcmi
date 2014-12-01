@@ -12,13 +12,17 @@ class JointShelves():
         fn = os.path.join(fpath, pattern)
         files = glob.glob(fn)
 
-        # Sort the files by the last modified date
-        files.sort(key=lambda x: os.path.getmtime(x))
+        # Sort the files by the name
+        #files.sort(key=lambda x: os.path.getmtime(x)) # last modified date
+        files.sort(key=lambda x: os.path.basename(x))
         files = reversed(files)
         for fn in files:
             self._shelves.append(shelve.open(fn))
 
     def __getitem__(self, key):
+        if not isinstance(key, str):
+            msg = "Key should be of type string!"
+            raise RuntimeError(msg)
         for shlv in self._shelves:
             if shlv.has_key(key):
                 return shlv[key]

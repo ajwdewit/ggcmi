@@ -119,13 +119,13 @@ class TaskManager:
             pass # No locking needed for SQLite: assuming one client only.
         
 #-------------------------------------------------------------------------------
-    def set_task_finished(self, task):
+    def set_task_finished(self, task, comment="OK"):
         "Sets a task to status 'Finished'"
         
         conn = self.engine.connect()
         self._lock_table(conn)
         u = self.table_tasklist.update(self.table_tasklist.c.task_id==task["task_id"])
-        conn.execute(u, status='Finished')
+        conn.execute(u, status='Finished', comment=comment)
         self._unlock_table(conn)
         
 #-------------------------------------------------------------------------------

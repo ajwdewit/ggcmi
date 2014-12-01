@@ -6,6 +6,7 @@ import os;
 class Netcdf4Raster(Netcdf4Envelope2D):
     # Constants
     DATAFILEXT = 'nc4';
+    _original_name = "yield_mai"
     
     # Data attributes - assign some dummy values for the mean time
     name = "dummy.nc4";
@@ -25,9 +26,11 @@ class Netcdf4Raster(Netcdf4Envelope2D):
     def open(self, mode, ncols=1, nrows=1, xll=0, yll=0, cellsize=1, nodatavalue=-9999.0):
         # If file does not exist and mode[0] = 'w', create it!
         fpath = os.path.join(self.folder, self.name);
-        if (mode[0] == 'w') and (not os.path.exists(fpath)):
-            self._dataset = Dataset(fpath, 'w', format='NETCDF4')
-            Netcdf4Envelope2D.__init__(self, ncols, nrows, xll, yll, cellsize, cellsize);
+        if mode[0] == 'a':
+            if os.path.exists(fpath):
+                print "About to open file " + fpath + " in append mode";
+            self._dataset = Dataset(fpath, 'a', format='NETCDF4');
+            Netcdf4Envelope2D.__init__(self, self._dataset);
             return True;
         else:
             if os.path.exists(fpath):  
@@ -64,11 +67,10 @@ class Netcdf4Raster(Netcdf4Envelope2D):
         return self.DATAFILEXT;
     
     def writeheader(self, name, long_name, units):
-        original_name = "yield_mai"
-        v = self._datafile.variables[original_name]
-        v.setattr("long_name", long_name)
-        v.setattr("units", units)
-        self._datafile.renameVariable(original_name, name)
+        v = self._dataset.variables[self._original_name]
+        v.setncattr("long_name", long_name)
+        v.setncattr("units", units)
+        self._dataset.renameVariable(self._original_name, name)
     
     def writenext(self, sequence_with_data):
         # Assume that the sequence is indexed 1. by year and 2. by column
