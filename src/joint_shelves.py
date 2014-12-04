@@ -4,9 +4,6 @@ import os, glob
 class JointShelves():
     _shelves = []
     
-    def open(self, fpath=os.getcwd(), pattern="*.shelve"):
-        self.__init__(fpath, pattern)
-
     def __init__(self, fpath=os.getcwd(), pattern="*.shelve"):
         # Return the shelve files - with the most recent one first
         fn = os.path.join(fpath, pattern)
@@ -17,7 +14,7 @@ class JointShelves():
         files.sort(key=lambda x: os.path.basename(x))
         files = reversed(files)
         for fn in files:
-            self._shelves.append(shelve.open(fn))
+            self._shelves.append(shelve.open(fn, flag="r"))
 
     def __getitem__(self, key):
         if not isinstance(key, str):

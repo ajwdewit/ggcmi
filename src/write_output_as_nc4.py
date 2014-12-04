@@ -1,7 +1,6 @@
 import run_settings
 import sys
 sys.path.append(run_settings.pcse_dir)
-from pcse.exceptions import PCSEError
 import logging, os
 from numpy import frompyfunc
 from sqlalchemy.exc import SQLAlchemyError
@@ -13,28 +12,28 @@ from cropinforeader import CropInfoProvider
 
 # Define some lambda functions to take care of unit conversions.
 no_conv = frompyfunc(lambda x: x, 1, 1)
-cm_day_to_mm_day1 = frompyfunc(lambda x: 10*x, 1, 1)
-cm_day_to_mm_day2 = frompyfunc(lambda x, y: 10*(x+y), 2, 1)
-cm_day_to_mm_day3 = frompyfunc(lambda x, y, z: 10*x*(y-z).days, 3, 1)
-kg_ha_to_t_ha = frompyfunc(lambda x: x*0.001, 1, 1)
+cm_day_to_mm_day1 = frompyfunc(lambda x: 10*x if x!=None else None, 1, 1)
+cm_day_to_mm_day2 = frompyfunc(lambda x, y: 10*(x+y) if x!=None else 10*y, 2, 1)
+cm_day_to_mm_day3 = frompyfunc(lambda x, y, z: 10*x*(y-z).days if x!=None and y!=None and z!=None else None, 3, 1)
+kg_ha_to_t_ha = frompyfunc(lambda x: x*0.001 if x!=None else None, 1, 1)
 date_to_doy = frompyfunc(doy, 1, 1)
-date_to_days_since_planting2 = frompyfunc(lambda x, y: (x-y).days, 2, 1)
+date_to_days_since_planting2 = frompyfunc(lambda x, y: (x-y).days if x!=None and y!=None else None, 2, 1)
 local_conv = frompyfunc(lambda w, x, y, z: w+x+y+z, 4, 1)
 
-variables = {"yield":     ("Crop yield (dry matter) in t ha-1 yr-1", "TWSO", kg_ha_to_t_ha),
-             "pirrww":    ("Applied irrigation water in mm yr-1", "", no_conv),
-             "biom":      ("Total Above ground biomass yield in t ha-1 yr-1", "TAGP", kg_ha_to_t_ha),
-             "aet":       ("Actual growing season evapotranspiration in mm yr-1", "EVST,CTRAT", cm_day_to_mm_day2),
-             "plant_day": ("Actual planting date in day of year", "DOS", date_to_doy),
-             "anth_day":  ("Days from planting to anthesis in days", "DOA,DOS", date_to_days_since_planting2),
-             "maty_day":  ("Days from planting to maturity in days", "DOH,DOM,DOS,task_id", local_conv),
-             "initr":     ("Nitrogen application rate in kg ha-1 yr-1", "", no_conv),
-             "leach":     ("Nitrogen leached in kg ha-1 yr-1", "", no_conv),
-             "sco2":      ("Soil carbon emissions in kg C ha-1", "", no_conv),
-             "sn2o":      ("Nitrous oxide emissions in kg N2O-N ha-1", "", no_conv),
-             "gsprcp":    ("Accumulated precipitation, planting to harvest in mm yr-1", "", cm_day_to_mm_day1), #GSRAINSUM
-             "gsrsds":    ("Growing season incoming solar in w m-2 yr-1" , "", cm_day_to_mm_day1), #GSRADIATIONSUM
-             "smt":       ("Sum of daily mean temps, planting to harvest in deg C-days yr-1", "", cm_day_to_mm_day3) #GSTEMPAVG
+variables = {"yield":     ("Crop yield (dry matter) :: t ha-1 yr-1", "TWSO", kg_ha_to_t_ha),
+             "pirrww":    ("Applied irrigation water :: mm yr-1", "", no_conv),
+             "biom":      ("Total Above ground biomass yield :: t ha-1 yr-1", "TAGP", kg_ha_to_t_ha),
+             "aet":       ("Actual growing season evapotranspiration :: mm yr-1", "EVST,CTRAT", cm_day_to_mm_day2),
+             "plant_day": ("Actual planting date :: day of year", "DOS", date_to_doy),
+             "anth_day":  ("Days from planting to anthesis :: days", "DOA,DOS", date_to_days_since_planting2),
+             "maty_day":  ("Days from planting to maturity :: days", "DOH,DOM,DOS,task_id", local_conv),
+             "initr":     ("Nitrogen application rate :: kg ha-1 yr-1", "", no_conv),
+             "leach":     ("Nitrogen leached :: kg ha-1 yr-1", "", no_conv),
+             "sco2":      ("Soil carbon emissions :: kg C ha-1", "", no_conv),
+             "sn2o":      ("Nitrous oxide emissions :: kg N2O-N ha-1", "", no_conv),
+             "gsprcp":    ("Accumulated precipitation, planting to harvest :: mm yr-1", "", cm_day_to_mm_day1), #GSRAINSUM
+             "gsrsds":    ("Growing season incoming solar :: w m-2 yr-1" , "", cm_day_to_mm_day1), #GSRADIATIONSUM
+             "smt":       ("Sum of daily mean temps, planting to harvest :: deg C-days yr-1", "", cm_day_to_mm_day3) #GSTEMPAVG
             }
 
 class CropSimOutputWorker():
@@ -62,20 +61,26 @@ class CropSimOutputWorker():
         self._sim_scenario = sim_scenario
         self._start_year = start_year
         self._end_year = end_year 
-        self._db_engine = sa_engine.create_engine(run_settings.connstr) 
+        try:
+            self._db_engine = sa_engine.create_engine(run_settings.connstr) 
+            
+            # Retrieve some info about the crop
+            self._crop_name, self._crop_label, self._mgmt_code = self._get_crop_info(crop_no)
+            self._crop_info_provider = CropInfoProvider(self._crop_name, self._mgmt_code)
+            
+        except Exception as e:
+            print " Error during initialisation of CropSimOutputWorker instance: \n" + str(e)
+            raise e
         
-        # Retrieve some info about the crop
-        self._crop_name, self._crop_label, self._mgmt_code = self._get_crop_info(crop_no)
-        self._crop_info_provider = CropInfoProvider(self._crop_name, self._mgmt_code)
-        
-        # Prepare a suitable input structure
-        self._joint_shelves = JointShelves(run_settings.shelve_folder) 
+    def set_joint_shelves(self, obj):
+        if isinstance(obj, JointShelves):
+            self._joint_shelves = obj;
         
     def _get_path_to_template(self):
         template_fn = "output_template_{clim_lc}_{timestep}_{start_year}_{end_year}.nc4"
         template_fn = template_fn.format(clim_lc=self._climate.lower(), timestep=self._timestep,
                                          start_year=self._start_year, end_year=self._end_year)
-        return os.path.join(run_settings.data_dir, self._climate, template_fn)
+        return os.path.join(run_settings.results_folder, template_fn)
 
     def _get_output_filename_pattern(self):
         ncdfname_templ = "{model}_{climate}_{clim_scenario}_{sim_scenario}_{variable}_{crop}_{timestep}_{start_year}_{end_year}.nc4"
@@ -101,12 +106,9 @@ class CropSimOutputWorker():
             if result < 0: result = result + 365
             return result
         
-    def __exit__(self):
-        self._db_engine = None
-        self._joint_shelves.close()
-        
     def close(self):
-        self.__exit__()
+        self._db_engine = None
+        self._joint_shelves = None
     
     def _get_crop_info(self, crop_no):
         crop_name = ""
@@ -153,8 +155,14 @@ class CropSimOutputWorker():
         return result
     
     def _get_simresult(self, task_id):
-        key_fmt = "%010i"
-        return self._joint_shelves.__getitem__(key_fmt % task_id)
+        try:
+            key_fmt = "%010i"
+            return self._joint_shelves[key_fmt % task_id]
+        except KeyError:
+            msg = "No results found for task_id %s " % task_id
+            print msg
+            logging.warn(msg)
+            return None
         
 def main():
     # Constants
@@ -176,6 +184,7 @@ def main():
     # Initialise
     joint_netcdf4 = None
     worker = None
+    joint_shelves = None
     
     # Make sure only relevant files are opened
     rasterkeys = []
@@ -183,16 +192,21 @@ def main():
         if variables[var][1] != "": rasterkeys.append(var)
         
     try:
-        for crop_no in range(1,29):
+        # Prepare a suitable input structure
+        print "About to open shelves with simulation output ..."
+        joint_shelves = JointShelves(run_settings.shelve_folder) 
+        
+        for crop_no in range(11,29):
             # Derive labels from table cropinfo
             worker = CropSimOutputWorker(crop_no, model, climate, clim_scenario, sim_scenario, start_year, end_year)  
+            worker.set_joint_shelves(joint_shelves)
             msg ="About to retrieve simulation results for crop %s (%s)"        
             print msg % (worker._crop_label, worker._mgmt_code)
                 
             # Prepare the output files and open them    
             path2template = worker._get_path_to_template();
             ncdf_pattern = worker._get_output_filename_pattern()
-            joint_netcdf4 = JointNetcdf4Raster(path2template, run_settings.output_folder, ncdf_pattern, rasterkeys)
+            joint_netcdf4 = JointNetcdf4Raster(path2template, run_settings.results_folder, ncdf_pattern, rasterkeys)
             if not joint_netcdf4.open('a', start_year, end_year, ncols, nrows, xll, yll, cellsize, nodatavalue):
                 continue
             
@@ -203,10 +217,10 @@ def main():
                 # In case of yield, the crop_label has to be added
                 cvt = variables[var]
                 if cvt[1] == "": continue
-                parts = cvt[0].split("in")
+                parts = cvt[0].split("::")
                 if var == "yield": name = var + "_" + worker._crop_label
                 else: name = var
-                joint_netcdf4.writeheader(var, name, parts[0].strip(), parts[1])
+                joint_netcdf4.writeheader(var, name, parts[0].strip(), parts[1].strip())
              
             # For each task, prepare a dictionary with relevant output
             rows = worker._get_finished_tasks(crop_no)
@@ -214,6 +228,7 @@ def main():
                 # Convert WOFOST output to the desired output format
                 print "About to retrieve output from task %s" % task_id
                 simresult = worker._get_simresult(task_id)
+                if not simresult: continue 
                 lon = simresult["longitude"]
                 lat = simresult["latitude"]
                 allresults = simresult["allresults"]
@@ -240,22 +255,33 @@ def main():
                             values[var] = conv(summary[cvt[1]])
                         else:
                             # Assume there are 2 or 3 input arguments to deal with
-                            x = cvt[1].split(',')
-                            if len(x) == 2:
-                                values[var] = conv(summary[x[0]], summary[x[1]])
-                            elif len(x) == 3: 
-                                values[var] = conv(summary[x[0]], summary[x[1]], summary[x[2]])
-                            else:
-                                if var == "maty_day":
-                                    doh = summary["DOH"]
-                                    dom = summary["DOM"]
-                                    dos = summary["DOS"]
-                                    values[var] = worker._get_length_of_season(doh, dom, dos, task_id)
+                            try: 
+                                argnames = cvt[1].split(',')
+                                args = []
+                                for name in argnames:
+                                    if name in summary.keys():
+                                        args.append(summary[name])
+                                    else:
+                                        args.append(None)
+                                if len(argnames) == 2:
+                                    values[var] = conv(args[0], args[1])
+                                elif len(argnames) == 3: 
+                                    values[var] = conv(args[0], args[1], args[2])
+                                else:
+                                    if var == "maty_day":
+                                        doh = summary["DOH"]
+                                        dom = summary["DOM"]
+                                        dos = summary["DOS"]
+                                        values[var] = worker._get_length_of_season(doh, dom, dos, task_id)
+                            except:
+                                continue
                      
                     # After filling the values for this year, assign them to the output raster!           
                     joint_netcdf4.set_data(yrcount, lon, lat, values)
                     yrcount = yrcount + 1
+
             # Now write
+            print "Stored values will now be written to the netCDF4 files ..."
             for _ in range(nrows):
                 joint_netcdf4.writenext()
         
@@ -265,7 +291,6 @@ def main():
             print msg % (worker._crop_label, worker._mgmt_code)
             worker.close()
             worker = None
-            
     except SQLAlchemyError as inst:
         msg = "Database error on crop %i." % crop_no
         print msg
@@ -274,13 +299,17 @@ def main():
         msg = "Error opening netCDF4 dataset on crop %i." % crop_no
         print msg
         logging.exception(msg)
-    except PCSEError as inst:
-        logging.exception(str(inst))
     except KeyboardInterrupt:
         msg = "While working on data about %s (%s), a user request was received. Quitting ..." 
         print msg % (worker._crop_label, worker._mgmt_code)
         logging.error(msg)
         sys.exit()
+    finally:
+        # Clean up
+        if joint_shelves != None:
+            joint_shelves.close()
+            joint_shelves = None
+            del joint_shelves
 
 if (__name__ == "__main__"):
     main()

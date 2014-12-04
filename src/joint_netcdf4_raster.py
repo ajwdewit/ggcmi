@@ -54,6 +54,7 @@ class JointNetcdf4Raster():
         for key in self._datasets.keys():
             values = self._rasters[key][:, self._currow,  :] 
             self._datasets[key].writenext(values)
+        self._currow += 1
     
     def writeheader(self, key, name, long_name, units):
         self._datasets[key].writeheader(name, long_name, units)

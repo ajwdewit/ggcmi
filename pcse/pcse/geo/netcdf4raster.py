@@ -38,12 +38,18 @@ class Netcdf4Raster(Netcdf4Envelope2D):
                 ds = Dataset(fpath, 'r');
                 Netcdf4Envelope2D.__init__(self, ds);
                 self._dataset = ds;
-                
-                # Establish which variable is stored in it - assume it's only 1!
-                diff = set(ds.variables) - set(ds.dimensions);
-                if len(diff) > 0: self._varname = diff.pop();
+                self._varname = self._get_varname();
                 return True;
             else: return False;    
+    
+    def _get_varname(self):
+        # Establish which variable is stored in it - assume it's only 1!
+        ds = self._dataset; 
+        diff = set(ds.variables) - set(ds.dimensions);
+        if len(diff) > 0:
+            return diff.pop();
+        else:
+            return "";
             
     def readheader(self):
         pass;
@@ -70,7 +76,9 @@ class Netcdf4Raster(Netcdf4Envelope2D):
         v = self._dataset.variables[self._original_name]
         v.setncattr("long_name", long_name)
         v.setncattr("units", units)
-        self._dataset.renameVariable(self._original_name, name)
+        if self._original_name != name:
+            self._dataset.renameVariable(self._original_name, name)
+        self._varname = name; 
     
     def writenext(self, sequence_with_data):
         # Assume that the sequence is indexed 1. by year and 2. by column

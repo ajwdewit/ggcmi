@@ -82,20 +82,20 @@ def get_site_data(soildata):
 
 
 #database connection
-username = "hoek008"
-password = "alterra"
-hostname = "d0116632"
+username = "test"
+password = "xG5^&Hn6VT4k"
+hostname = "alterra-ei-ggcmi.cihy1ytynivm.us-west-2.rds.amazonaws.com"
 dbname   = "ggcmi"
 connstr = 'mysql://%s:%s@%s/%s?charset=utf8' % (username, password, hostname, dbname)
 
 # Folder for pcse code
-pcse_dir = r"/home/hoek008/projects/ggcmi/ggcmi/pcse"
+pcse_dir = r"/mnt/ggcmi_output/ggcmi_src/ggcmi/pcse"
 
 # Top level folder for data
-data_dir = "/home/hoek008/projects/ggcmi/data/"
+data_dir = "/mnt/ggcmi_output/ggcmi_src/data/"
 
 # Meteorological input data in HDF5
-hdf5_meteo_file = os.path.join(data_dir, "AgMERRA", "AgMERRA_1980-01-01_2010-12-31_final.hf5")
+hdf5_meteo_file = os.path.join("/mnt/climate_forcings", "AgMERRA_1980-01-01_2010-12-31_final.hf5")
 
 # file with the land mask
 landmask_grid = os.path.join(data_dir, "geodata", "glob_landmask_resampled.flt")
@@ -103,7 +103,7 @@ landmask_grid = os.path.join(data_dir, "geodata", "glob_landmask_resampled.flt")
 # dummy code to avoid import of GridEnvelope2D from pcse.geo.gridenvelope2d 
 class GridEnvelope2D:
     def __init__(self, ncols, nrows, xll, yll, dx, dy):
-        pass; 
+        pass
 
 # regions and crop specific files with parameters
 regions = {"World": GridEnvelope2D(720, 360, -180., -90., 0.5, 0.5),
@@ -147,10 +147,11 @@ days_before_CROP_START_DATE = 90
 days_after_CROP_END_DATE = 14
 
 # Location where output should be written
-top_level_dir = data_dir
+top_level_dir = "/mnt/ggcmi_output"
 output_folder = os.path.join(top_level_dir, "output")
 output_file_template = "ggcmi_results_task_%010i.pkl"
 shelve_folder = os.path.join(top_level_dir, "shelves")
+results_folder = os.path.join(top_level_dir, "results_nc4")
 log_folder = os.path.join(top_level_dir, "logs")
 
 # Number of CPU's to use for simulations
@@ -161,7 +162,7 @@ log_folder = os.path.join(top_level_dir, "logs")
 #   with a maximum of multiprocessing.cpu_count()
 # * a negative integer number will be subtracted from multiprocessing
 # .cpu_count() with a minimum of 1 CPU
-number_of_CPU = 1
+number_of_CPU = -2 
 
 # this is the maximum number of tasks that a worker is allowed to 
 # execute.
