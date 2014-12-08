@@ -196,7 +196,7 @@ def main():
         print "About to open shelves with simulation output ..."
         joint_shelves = JointShelves(run_settings.shelve_folder) 
         
-        for crop_no in range(11,29):
+        for crop_no in range(21,29):
             # Derive labels from table cropinfo
             worker = CropSimOutputWorker(crop_no, model, climate, clim_scenario, sim_scenario, start_year, end_year)  
             worker.set_joint_shelves(joint_shelves)
