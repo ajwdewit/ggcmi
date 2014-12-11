@@ -4,6 +4,7 @@ import time
 import logging
 import cPickle
 from datetime import datetime
+import pdb
 
 import run_settings
 sys.path.append(run_settings.pcse_dir)

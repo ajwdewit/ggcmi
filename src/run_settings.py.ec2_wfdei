@@ -89,13 +89,13 @@ dbname   = "ggcmi_wfdei" # change this into the db name: "ggcmi"
 connstr = 'mysql://%s:%s@%s/%s?charset=utf8' % (username, password, hostname, dbname)
 
 # Folder for pcse code
-pcse_dir = r"/mnt/ggcmi_output/ggcmi_src/pcse"
+pcse_dir = r"/mnt/ggcmi_output/ggcmi_src/ggcmi/pcse"
 
 # Top level folder for data
 data_dir = "/mnt/ggcmi_output/ggcmi_src/data/"
 
 # Meteorological input data in HDF5
-hdf5_meteo_file = os.path.join("/mnt/climate_forcings, "WFDEI_1979-01-01_2010-12-31_final.hf5")
+hdf5_meteo_file = os.path.join("/mnt/local_store0", "WFDEI_1979-01-01_2010-12-31_final.hf5")
 
 # file with the land mask
 landmask_grid = os.path.join(data_dir, "geodata", "glob_landmask_resampled.flt")
@@ -151,7 +151,7 @@ top_level_dir = "/mnt/ggcmi_output"
 output_folder = os.path.join(top_level_dir, "output")
 output_file_template = "ggcmi_results_task_%010i.pkl"
 shelve_folder = os.path.join(top_level_dir, "shelves")
-log_folder = os.path.join(top_level_dir, "logs")
+log_folder = os.path.join("/mnt/local_store0", "logs")
 
 # Number of CPU's to use for simulations
 # Several has options are possible:
@@ -161,7 +161,7 @@ log_folder = os.path.join(top_level_dir, "logs")
 #   with a maximum of multiprocessing.cpu_count()
 # * a negative integer number will be subtracted from multiprocessing
 # .cpu_count() with a minimum of 1 CPU
-number_of_CPU = -1
+number_of_CPU = None
 
 # this is the maximum number of tasks that a worker is allowed to 
 # execute.

@@ -320,7 +320,7 @@ class WaterbalanceFD(SimulationObject):
                            WTRAT=0., EVST=0., EVWT=0., TSR=0.,
                            RAINT=0., WDRT=0., TOTINF=0., TOTIRR=0.,
                            PERCT=0., LOSST=0., WBALRT=-999., WBALTT=-999.)
-        self.rates = self.RateVariables(kiosk)
+        self.rates = self.RateVariables(kiosk, publish="EVS")
         
         # Connect to CROP_EMERGED/CROP_FINISH signals for water balance to
         # search for crop transpiration values

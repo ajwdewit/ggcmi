@@ -162,8 +162,6 @@ class Engine(BaseEngine):
         # Save state variables of the model
         if self.flag_output:
             self._save_output(day)
-        if self.flag_summary_output:
-            self._save_summary_output()
 
         # Check if flag is present to finish crop simulation
         if self.flag_crop_finish:
@@ -303,6 +301,10 @@ class Engine(BaseEngine):
 
         # Run the finalize section of the cropsimulation and sub-components
         self.crop.finalize(day)
+
+        # save summary output after the crop has been finalized
+        if self.flag_summary_output:
+            self._save_summary_output()
 
         # Only remove the crop simulation object from the system when the crop
         # is finished, when explicitly asked to do so.

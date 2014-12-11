@@ -65,6 +65,7 @@ class Wofost(SimulationObject):
     GASST       Total gross assimilation                           N    |kg CH2O ha-1|
     MREST       Total gross maintenance respiration                N    |kg CH2O ha-1|
     CTRAT       Total crop transpiration                           N    cm
+    CEVST       Total soil evapotranspiration during crop cycle    N    cm
     HI          Harvest Index (only calculated during              N    -
                 `finalize()`)
     DOF         Date representing the day of finish of the crop    N    -
@@ -117,6 +118,7 @@ class Wofost(SimulationObject):
         GASST = Float(-99.)
         MREST = Float(-99.)
         CTRAT = Float(-99.) # Crop total transpiration
+        CEVST = Float(-99.)
         HI    = Float(-99.)
         DOF = Instance(datetime.date)
         FINISH_TYPE = Instance(str)
@@ -166,7 +168,7 @@ class Wofost(SimulationObject):
         self.states = self.StateVariables(kiosk,
                                           publish=["TAGP","GASST","MREST","HI"],
                                           TAGP=TAGP, GASST=0.0, MREST=0.0,
-                                          CTRAT=0.0, HI=0.0,
+                                          CTRAT=0.0, CEVST=0., HI=0.0,
                                           DOF=None, FINISH_TYPE=None)
 
         # Check partitioning of TDWI over plant organs
@@ -284,8 +286,9 @@ class Wofost(SimulationObject):
         states.GASST += rates.GASS
         states.MREST += rates.MRES
         
-        # total crop transpiration (CTRAT)
+        # total crop transpiration en soil evaporation (CTRAT)
         states.CTRAT += self.kiosk["TRA"]
+        states.CEVST += self.kiosk["EVS"]
 
         self.agromet_indicators.integrate(day)
 
