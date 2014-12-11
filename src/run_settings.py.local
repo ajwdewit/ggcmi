@@ -151,6 +151,7 @@ top_level_dir = data_dir
 output_folder = os.path.join(top_level_dir, "output")
 output_file_template = "ggcmi_results_task_%010i.pkl"
 shelve_folder = os.path.join(top_level_dir, "shelves")
+results_folder = os.path.join(top_level_dir, "results_nc4")
 log_folder = os.path.join(top_level_dir, "logs")
 
 # Number of CPU's to use for simulations
