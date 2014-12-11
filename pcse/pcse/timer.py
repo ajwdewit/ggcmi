@@ -7,7 +7,7 @@ from .pydispatch import dispatcher
 from .base_classes import AncillaryObject, VariableKiosk
 from .traitlets import HasTraits, Instance, Bool, Int, Enum
 from . import signals
-from .util import is_a_dekad, is_a_month, is_a_week
+from .util import is_a_dekad, is_a_month, is_a_week, ConfigurationLoader
 
 
 class Timer(AncillaryObject):
@@ -30,17 +30,21 @@ class Timer(AncillaryObject):
  
 
   """
-
+    first_call = Bool()
     start_date = Instance(datetime.date)
     final_date = Instance(datetime.date)
     current_date = Instance(datetime.date)
     time_step = Instance(datetime.timedelta)
+
+    # configuration loader
+    mconf = Instance(ConfigurationLoader)
+
     interval_type = Enum(["daily", "weekly", "dekadal", "monthly"])
     output_weekday = Int
     interval_days = Int
     generate_output = Bool()
+    output_only_in_crop_cycle = Bool()
     day_counter = Int
-    first_call = Bool()
     _in_crop_cycle = Bool()
 
     def initialize(self, start_date, kiosk, final_date, mconf):
@@ -62,14 +66,19 @@ class Timer(AncillaryObject):
         self.final_date = final_date
         self.current_date = start_date
         self.day_counter = 0
+        self.time_step = datetime.timedelta(days=1)
+        self.first_call = True
+
+        # Store model configuration
+        self.mconf = mconf
+
         # Settings for generating output. Note that if no OUTPUT_VARS are listed
         # in that case no OUTPUT signals will be generated.
         self.generate_output = bool(mconf.OUTPUT_VARS)
         self.interval_type = mconf.OUTPUT_INTERVAL.lower()
         self.output_weekday = mconf.OUTPUT_WEEKDAY
         self.interval_days = mconf.OUTPUT_INTERVAL_DAYS
-        self.time_step = datetime.timedelta(days=1)
-        self.first_call = True
+        self.output_only_in_crop_cycle = mconf.OUTPUT_ONLY_IN_CROP_CYCLE
         self._in_crop_cycle = False
 
         self._connect_signal(self._on_CROP_FINISH, signals.crop_finish)
@@ -86,33 +95,36 @@ class Timer(AncillaryObject):
         # On first call only return the current date, do not increase time
         if self.first_call is True:
             self.first_call = False
-            self.logger.debug("Model time at first call: %s" % self
-                             .current_date)
+            self.logger.debug("Model time at first call: %s" % self.current_date)
         else:
             self.current_date += self.time_step
             self.day_counter += 1
             self.logger.debug("Model time updated to: %s" % self.current_date)
 
-        # Check if output should be generated
-        output = False
-        if not self._in_crop_cycle:
+        # Check if output should be generated depending on whether any
+        # variables are defined, whether there is a crop cycle going on and
+        # whether the interval type is matched.
+
+        if not self.generate_output:
+        # variable list is empty
             output = False
-        elif self.generate_output:
-            if self.interval_type == "daily":
-                if (self.day_counter % self.interval_days) == 0:
-                    output = True
-            elif self.interval_type == "weekly":
-                if is_a_week(self.current_date, self.output_weekday):
-                    output = True 
-            elif self.interval_type == "dekadal":
-                if is_a_dekad(self.current_date):
-                    output = True
-            elif self.interval_type == "monthly":
-                if is_a_month(self.current_date):
-                    output = True
+        elif not self._in_crop_cycle and self.output_only_in_crop_cycle:
+        # Not in crop cycle and output only for crop cycle
+            output = False
+        elif self.interval_type == "daily":
+            if (self.day_counter % self.interval_days) == 0:
+                output = True
+        elif self.interval_type == "weekly":
+            if is_a_week(self.current_date, self.output_weekday):
+                output = True
+        elif self.interval_type == "dekadal":
+            if is_a_dekad(self.current_date):
+                output = True
+        elif self.interval_type == "monthly":
+            if is_a_month(self.current_date):
+                output = True
 
         # Send output signal if True
-        #output = True
         if output:
             self._send_signal(signal=signals.output)
             

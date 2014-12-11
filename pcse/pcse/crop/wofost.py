@@ -286,7 +286,8 @@ class Wofost(SimulationObject):
         states.GASST += rates.GASS
         states.MREST += rates.MRES
         
-        # total crop transpiration en soil evaporation (CTRAT)
+        # total crop transpiration (CTRAT) en total soil evaporation during
+        # crop cycle.
         states.CTRAT += self.kiosk["TRA"]
         states.CEVST += self.kiosk["EVS"]
 

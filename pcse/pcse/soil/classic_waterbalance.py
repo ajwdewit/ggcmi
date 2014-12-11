@@ -27,23 +27,33 @@ class WaterbalancePP(SimulationObject):
     class StateVariables(StatesTemplate):
         SM = Float(-99.)
 
+    class RateVariables(RatesTemplate):
+        EVS = Float(-99.) # soil evporation rates
+
     def initialize(self, day, kiosk, cropdata, soildata, sitedata):
         """    
         :param day: start date of the simulation
         :param kiosk: variable kiosk of this PyWOFOST instance
         :param soildata: dictionary with WOFOST soildata key/value pairs
     
-        This waterbalance keeps the soil moisture always at field capacity. Therefore   
+        This waterbalance keeps the soil moisture always at field capacity. Therefore
         `WaterbalancePP` has only one parameter (`SMFCF`: the field capacity of the
         soil) and one state variable (`SM`: the volumetric soil moisture).
+
+        Moreover, because soil evaporation (EVS) is accumulated by the crop
+        simulation model, also the rate variable EVS is defined. Here it is
+        assumed that the soil is always wet and therefore EVS equals the
+        potential soil evaporation rate (EVSMX)
+
         """
         self.params = self.Parameters(soildata)
+        self.rates = self.RateVariables(kiosk, publish="EVS")
         self.states = self.StateVariables(kiosk, SM=self.params.SMFCF,
                                           publish="SM")
     
     @prepare_rates
     def calc_rates(self, day, drv):
-        pass
+        self.rates.EVS = self.kiosk["EVSMX"]
     
     @prepare_states
     def integrate(self, day):
