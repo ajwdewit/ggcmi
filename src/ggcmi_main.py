@@ -39,7 +39,7 @@ def main():
         if nCPU == 1:
             run_with_taskmanager()
         else:
-            for i in range(nCPU-1):
+            for i in range(nCPU):
                 p = multiprocessing.Process(target=run_with_taskmanager)
                 p.start()
                 plist.append(p)

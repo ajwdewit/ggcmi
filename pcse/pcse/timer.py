@@ -105,6 +105,7 @@ class Timer(AncillaryObject):
         # variables are defined, whether there is a crop cycle going on and
         # whether the interval type is matched.
 
+        output = False
         if not self.generate_output:
         # variable list is empty
             output = False

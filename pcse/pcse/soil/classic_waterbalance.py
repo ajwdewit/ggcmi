@@ -53,7 +53,10 @@ class WaterbalancePP(SimulationObject):
     
     @prepare_rates
     def calc_rates(self, day, drv):
-        self.rates.EVS = self.kiosk["EVSMX"]
+        if "EVSMX" not in self.kiosk:
+            self.rates.EVS = drv.ES0
+        else:
+            self.rates.EVS = self.kiosk["EVSMX"]
     
     @prepare_states
     def integrate(self, day):
