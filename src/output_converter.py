@@ -214,15 +214,12 @@ def convert_to_nc4(crop_no):
         sys.exit()
         
 def main():
-    #===========================================================================
-    # p = Pool(3)
-    # crops = range(1, 29)
-    # p.map(convert_to_nc4, crops)
-    # return
-    #===========================================================================
-    p= Process(target=convert_to_nc4, args=(1,))
-    p.start()
-    p.join()
+    p = Pool(3)
+    crops = range(1, 29)
+    p.map(convert_to_nc4, crops)
+    # p= Process(target=convert_to_nc4, args=(1,))
+    # p.start()
+    # p.join()
 
 if (__name__ == "__main__"):
     main()
