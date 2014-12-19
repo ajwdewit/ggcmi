@@ -13,7 +13,10 @@ class JointShelves():
         # Sort the files by the name
         #files.sort(key=lambda x: os.path.getmtime(x)) # last modified date
         files.sort(key=lambda x: os.path.basename(x))
-        files = reversed(files)
+        # Note that duplicate keys can exist in different shelves
+        # currently only the first key is found and the value is returned.
+        # you could sort in reverse order though.
+        # files = reversed(files)
         for fn in files:
             self._shelves.append(shelve.open(fn, flag="r"))
 
