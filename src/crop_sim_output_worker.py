@@ -79,7 +79,9 @@ class CropSimOutputWorker():
         
     def close(self):
         self._db_engine = None
+        self._joint_shelves.close()
         self._joint_shelves = None
+        del self._joint_shelves
     
     def _get_crop_info(self, crop_no):
         crop_name = ""

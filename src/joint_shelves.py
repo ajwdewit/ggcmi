@@ -44,5 +44,5 @@ class JointShelves():
 
     def close(self):
         for s in self._shelves:
-            s.close()
+            if s != None: s.close()
         self._shelves = None

@@ -8,7 +8,7 @@ from joint_netcdf4_raster import JointNetcdf4Raster
 from joint_shelves import JointShelves
 from numpy import frompyfunc
 from pcse.util import doy
-from multiprocessing import Pool, Process
+from multiprocessing import Pool, cpu_count
 
 # Constants
 nrows = 360
@@ -65,10 +65,10 @@ class OutputConverter():
         self._joint_shelves = JointShelves(conv_settings.shelve_folder) 
 
         # Derive labels from table cropinfo
-        worker = CropSimOutputWorker(crop_no, model, climate, clim_scenario, sim_scenario, start_year, end_year)  
-        worker.set_joint_shelves(self._joint_shelves)
+        self._worker = CropSimOutputWorker(crop_no, model, climate, clim_scenario, sim_scenario, start_year, end_year)  
+        self._worker.set_joint_shelves(self._joint_shelves)
         msg ="About to retrieve simulation results for crop %s (%s)"        
-        print msg % (worker._crop_label, worker._mgmt_code)
+        print msg % (self._worker._crop_label, self._worker._mgmt_code)
 
         # Make sure only files are opened for the relevant variables
         rasterkeys = []
@@ -76,8 +76,8 @@ class OutputConverter():
             if variables[var][1] != "": rasterkeys.append(var)
 
         # Prepare the output files    
-        path2template = worker._get_path_to_template();
-        ncdf_pattern = worker._get_output_filename_pattern()
+        path2template = self._worker._get_path_to_template();
+        ncdf_pattern = self._worker._get_output_filename_pattern()
         self._joint_netcdf4 = JointNetcdf4Raster(path2template, conv_settings.results_folder, ncdf_pattern, rasterkeys)
             
     def close(self):
@@ -105,11 +105,11 @@ class OutputConverter():
             msg = "About to write output in netcdf4 format for crop %s (%s)"
             print msg % (worker._crop_label, worker._mgmt_code)
             for var in variables:
-                # In case of yield, the crop_label has to be added
+                # The crop_label has to be added to the name
+                name = var + "_" + worker._crop_label
                 cvt = variables[var]
                 if cvt[1] == "": continue
-                parts = cvt[0].split("::")
-                name = var + "_" + worker._crop_label
+                parts = cvt[0].split("::") # separate description from units
                 self._joint_netcdf4.writeheader(var, name, parts[0].strip(), parts[1].strip())
              
             # For each task, prepare a dictionary with relevant output
@@ -213,13 +213,39 @@ def convert_to_nc4(crop_no):
         logging.error(msg)
         sys.exit()
         
+def determine_CPUs():
+    """Determines the number of CPUs to use based on multiprocessing
+    .cpu_count() and the setting run_settings.number_of_CPU"""
+    nCPU = cpu_count()
+
+    if nCPU == 1:
+        return 1
+
+    if conv_settings.number_of_CPU is None:
+        return nCPU
+
+    user_CPU = int(conv_settings.number_of_CPU)
+    if user_CPU == 0:
+        return 1
+    elif user_CPU > 0:
+        return min(nCPU, user_CPU)
+    else:
+        return max(1, user_CPU + nCPU)
+        
 def main():
-    p = Pool(3)
-    crops = range(1, 29)
-    p.map(convert_to_nc4, crops)
-    # p= Process(target=convert_to_nc4, args=(1,))
-    # p.start()
-    # p.join()
+    #===========================================================================
+    #number_of_CPU = determine_CPUs()
+    #p = Pool(number_of_CPU)
+    crops = range(6, 20)
+    for crop in crops:
+        convert_to_nc4(crop)
+    #p.map(convert_to_nc4, crops)
+    # return
+    #===========================================================================
+    #p= Process(target=convert_to_nc4, args=(1,))
+    #p.start()
+    #p.join()
+    #convert_to_nc4(1)
 
 if (__name__ == "__main__"):
     main()
